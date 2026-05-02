@@ -115,6 +115,58 @@ git remote set-url origin https://账号@github.com/组织或账号/仓库.git
 cmdkey /delete:git:https://github.com
 ```
 
+### 8.3 `Failed to connect to github.com port 443`
+
+含义：当前网络到 `github.com:443` 不通，HTTPS 推送会失败。
+
+先验证连通性：
+
+```bash
+Test-NetConnection github.com -Port 443
+Test-NetConnection ssh.github.com -Port 443
+```
+
+若 `github.com:443` 不通但 `ssh.github.com:443` 可通，建议切到 SSH over 443：
+
+```bash
+git remote set-url origin ssh://git@ssh.github.com:443/账号/仓库.git
+```
+
+### 8.4 `Permission denied (publickey)`（切 SSH 后）
+
+含义：SSH key 还没有加到对应 GitHub 账号。
+
+处理步骤：
+
+1. 生成专用密钥（示例：wendao-dog）
+
+```bash
+ssh-keygen -t ed25519 -C "wendao-dog@users.noreply.github.com" -f "$HOME/.ssh/id_ed25519_wendao_dog"
+```
+
+2. 查看公钥并复制
+
+```bash
+Get-Content "$HOME/.ssh/id_ed25519_wendao_dog.pub"
+```
+
+3. 打开 GitHub → Settings → SSH and GPG keys → New SSH key，粘贴并保存
+
+4. 当前仓库绑定该 key（避免双账号串用）
+
+```bash
+git config --local core.sshCommand "ssh -i C:/Users/你的用户名/.ssh/id_ed25519_wendao_dog -o IdentitiesOnly=yes"
+```
+
+注意：Windows 下这里建议使用 `C:/...` 这种正斜杠路径，避免私钥路径解析失败。
+
+5. 测试与推送
+
+```bash
+ssh -T -i C:/Users/你的用户名/.ssh/id_ed25519_wendao_dog -o IdentitiesOnly=yes -p 443 git@ssh.github.com
+git push -u origin main
+```
+
 ---
 
 ## 9. 可直接复制模板
@@ -143,5 +195,5 @@ git push -u origin main
 
 该项目已成功推送到：
 
-- `https://github.com/wendao-dog/free-video-downloader.git`
+- `ssh://git@ssh.github.com:443/wendao-dog/free-video-downloader.git`
 - 分支：`main`
