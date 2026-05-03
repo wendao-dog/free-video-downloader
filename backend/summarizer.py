@@ -1,4 +1,4 @@
-"""AI 视频总结模块：字幕提取 + DeepSeek 大模型总结"""
+"""AI 视频总结模块：字幕提取 + 通用大模型总结（默认阿里百炼）"""
 
 import json
 import os
@@ -278,17 +278,26 @@ class SubtitleExtractor:
 
 
 class VideoSummarizer:
-    """使用 DeepSeek API 生成视频总结、思维导图、问答"""
+    """使用兼容 OpenAI 协议的大模型 API 生成视频总结、思维导图、问答"""
 
     def __init__(self):
-        api_key = os.getenv("DEEPSEEK_API_KEY", "")
+        # 默认走阿里百炼（DashScope 兼容模式），同时兼容旧的 DEEPSEEK_API_KEY。
+        api_key = (
+            os.getenv("BAILIAN_API_KEY", "").strip()
+            or os.getenv("DASHSCOPE_API_KEY", "").strip()
+            or os.getenv("DEEPSEEK_API_KEY", "").strip()
+        )
         if not api_key:
-            raise ValueError("DEEPSEEK_API_KEY 环境变量未设置")
+            raise ValueError("请设置 BAILIAN_API_KEY（或 DASHSCOPE_API_KEY）环境变量")
+
+        base_url = os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1").strip()
+        model = os.getenv("LLM_MODEL", "qwen-plus").strip()
+
         self.client = OpenAI(
             api_key=api_key,
-            base_url="https://api.deepseek.com",
+            base_url=base_url,
         )
-        self.model = "deepseek-chat"
+        self.model = model
 
     def summarize_stream(self, subtitle_text: str, language: str = "zh"):
         """流式生成视频总结，yield 每个 token"""
